@@ -17,12 +17,11 @@ firebase_admin.initialize_app(c, {'databaseURL': 'https://discbot-f50a9-default-
 #client = discord.Client(command_prefix = "!",intents = intents)
 ref = db.reference("/")
 
-users = ref.child('users')
 
 
 
 
-class chars:
+class chars:  #Parent Class for general charachter outline
     def __init__(self,typee,power,health,xp,value):
         self.typee = typee
         self.power = power
@@ -32,13 +31,25 @@ class chars:
 
     def combat():
         pass
+    def hunt():
+        pass
+    def abandon():
+        pass
+    def level():
+        pass
+    def buy():
+        pass
+    
+    # Space to add more player actions
 
-class user(chars):
-    def __init__(self,typee,power,health,xp,value,level):
+class user(chars):    #Class for player
+    def __init__(self,id,name,typee="Player",power=None,health=100,xp=0,value=None,level=1):
         super().__init__(typee,power,health,xp,value)
         self.level = level
-class evil(chars):
-    def __init__(self, typee, power, health, xp, value):
+        self.id = id
+        self.name = name
+class evil(chars):  #Class for opponents
+    def __init__(self,power, typee="System wardogs", health=100, xp=1000, value=None):
         super().__init__(typee, power, health, xp, value)
 
 class blow:
@@ -69,20 +80,35 @@ class blow:
             player = {"join_server_date": "2020:2:2","xp_points":20}
            # await context.message.reply(embeds = embed) 
             #await self.bot.say("So you want stats?")
+
             embed = discord.Embed(title = "Brilliant")
             embed.set_author(name=context.author.display_name,icon_url=context.author.avatar_url)
             embed.add_field(name="Testing",value="""
                             Wow
                             """,inline=True)
+
+            embed = discord.Embed(title = "")
+            embed.set_author(name=context.author.display_name,icon_url=context.author.avatar_url)
+            embed.add_field(name="",value="""<Write something here>""",inline=True)
+
             await context.message.reply(embed=embed)
                             
 
-    def bulk_store(self):
+    def bulk_store(self):      # Function to store all the members in the server
         for i in self.bot.get_all_members():
-            self.store(i.id)
-    def store(self,x):
-            global users 
-            users.push({x : 1})
+            x=user(i.id,i.name)
+            self.store(x)
+    def store(self,x):         # Function to push given datapoint into DB
+            
+            users = ref.child('users/player') 
+            users.push({
+                x.id:{"typee":x.typee,
+                       "Name" : x.name,
+                       "xp" : x.xp,
+                       "level" : x.level,
+                       "health":x.health,
+                       "power" : x.power}
+                    })
         
 i=blow(os.getenv("token"))
 print(i.run())
