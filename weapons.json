@@ -1,0 +1,35 @@
+"weapons":{{"guns":{"pistol":10,
+                    "junkyard gun":15,
+                    "QQ9":20,
+                    "AK47":24
+                    }
+            }
+           {"melee":{"basic knives":45,
+                     "katana":55,
+                     "brass knuckles":65,
+                     "simple staff":72,
+                     "Bahubali's sword":85,
+                     "Alexander's staff":94,
+                     "Zoro's 3 katana":110
+                     }
+            }
+            {"blunt melee":{"mace of night":65,
+                            "Hercules mace":78,
+                            "Cyclops hammer":84,
+                            "Viking bludgeon":92,
+                            }
+            }
+            {"mystical armaments":{"Hammer of Thor":45,"enemy can't attack for one turn"
+                                   "Fortuna's spear":49,"5 percent increase in exp after battle"
+                                   "Apollo's wrath":55,"5 percent increase in resources after hunt"
+                                   "Luke's light saber":65,"5 percent increase in money after battle"
+                                   }
+            }
+           }
+                     
+        
+           
+            
+
+           
+       
