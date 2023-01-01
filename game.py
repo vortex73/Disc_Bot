@@ -2,6 +2,7 @@ import os
 from dotenv import load_dotenv
 import firebase_admin
 import random
+import json
 import discord
 from firebase_admin import credentials
 from firebase_admin import db
@@ -108,13 +109,31 @@ class blow:
 
 
         @self.bot.command(name="attack")
-
+        
         async def atck(context):
             player = user(context.author.id,context.author.display_name,power=10)
             # Opponent definition
             opponent = evil(power=50)
-            
+            # TODO : dependence of attack on XP points
             await context.message.reply(str(player.combat(opponent)))
+        
+        @self.bot.command(name="buy")
+
+        async def buy(context):
+            pass
+        
+
+        @self.bot.command(name="hunt"):
+        
+        async def hunt(context):
+            pass
+
+        @self.bot.command(name="abandon")
+
+        async def abandon(context):
+            pass
+
+
 
 
 
@@ -127,14 +146,18 @@ class blow:
     def store(self,x):         # Function to push given datapoint into DB
             
             users = ref.child('users/player') 
+          #  file = open(r"weapons.json","r")
+          #  json.load(file)
             users.push({
                 x.id:{"typee":x.typee,
                        "Name" : x.name,
                        "xp" : x.xp,
                        "level" : x.level,
                        "health":x.health,
-                       "power" : x.power}
-                    })
+                       "power" : x.power,
+                       "weapons" : [],
+                       "powerups": {}
+                    }})
         
 i=blow(os.getenv("token"))
 print(i.run())
