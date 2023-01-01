@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 import firebase_admin
+import random
 import discord
 from firebase_admin import credentials
 from firebase_admin import db
@@ -28,13 +29,28 @@ class chars:  #Parent Class for general charachter outline
         self.health = health
         self.xp = xp 
         self.value = value
+    
+    def combat(self,x):
+        while True:
+            hit_prob = random.random()*self.power
+            x_hit_prob = random.random()*x.power
+            self.health -= x_hit_prob
+            x.health -= hit_prob
+            if self.health or x.health == 0:
+                break
 
-    def combat():
-        pass
+        print(hit_prob,x_hit_prob)
+        print(self.health,x.health)
+        if self.health>x.health:
+            return "You Won!"
+        else:
+            return "You lost."
+
     def hunt():
         pass
     def abandon():
         pass
+
     def level():
         pass
     def buy():
@@ -75,7 +91,11 @@ class blow:
             await self.bot.change_presence(activity=Game(name="Koala"))
             self.bulk_store()
             print("[*] Connected to Discord as: " + self.bot.user.name)
+
+
+
         @self.bot.command(name='stats')
+
         async def stats(context):
             player = {"join_server_date": "2020:2:2","xp_points":20}
            # await context.message.reply(embeds = embed) 
@@ -92,12 +112,26 @@ class blow:
             embed.add_field(name="",value="""<Write something here>""",inline=True)
 
             await context.message.reply(embed=embed)
-                            
+
+
+
+        @self.bot.command(name="attack")
+
+        async def atck(context):
+            player = user(context.author.id,context.author.display_name,power=10)
+            # Opponent definition
+            opponent = evil(power=50)
+            
+            await context.message.reply(str(player.combat(opponent)))
+
+
 
     def bulk_store(self):      # Function to store all the members in the server
         for i in self.bot.get_all_members():
             x=user(i.id,i.name)
             self.store(x)
+
+
     def store(self,x):         # Function to push given datapoint into DB
             
             users = ref.child('users/player') 
