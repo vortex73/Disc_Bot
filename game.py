@@ -19,10 +19,6 @@ firebase_admin.initialize_app(c, {'databaseURL': 'https://discbot-f50a9-default-
 #client = discord.Client(command_prefix = "!",intents = intents)
 ref = db.reference("/")
 
-
-
-
-
 class chars:  #Parent Class for general charachter outline
     def __init__(self,typee,power,health,xp,value):
         self.typee = typee
@@ -71,7 +67,6 @@ class evil(chars):  #Class for opponents
 
 class blow:
 
-
     def __init__(self,token):
         self.token = token
         self.bot = Bot(command_prefix = BOTPREFIX , intents = intents)
@@ -82,7 +77,6 @@ class blow:
        # # print(ref.get ())
 #        users = ref.child('users')
        # users.set({
-       #     
        # users.push() # test code for firebase
      
     def initialize(self):
@@ -92,8 +86,6 @@ class blow:
             await self.bot.change_presence(activity=Game(name="Kola Theme"))
             self.bulk_store()
             print("[*] Connected to Discord as: " + self.bot.user.name)
-
-
 
         @self.bot.command(name='stats')
 
@@ -105,8 +97,6 @@ class blow:
             embed.set_author(name=context.author.display_name,icon_url=context.author.avatar_url)
             embed.add_field(name="",value="""<Write something here>""",inline=True)
             await context.message.reply(embed=embed)
-
-
 
         @self.bot.command(name="attack")
         
@@ -120,10 +110,12 @@ class blow:
         @self.bot.command(name="buy")
 
         async def buy(context):
-            pass
-        
-
-        @self.bot.command(name="hunt"):
+            shop = discord.Embed(title="Armoury")
+            shop.set_author(name=context.author.display_name,icon_url=context.author.avatar_url)
+            shop.addfield(name="Buy:",value=f"""
+                                {}
+                          """)
+        @self.bot.command(name="hunt")
         
         async def hunt(context):
             pass
@@ -133,21 +125,14 @@ class blow:
         async def abandon(context):
             pass
 
-
-
-
-
     def bulk_store(self):      # Function to store all the members in the server
         for i in self.bot.get_all_members():
             x=user(i.id,i.name)
             self.store(x)
 
-
     def store(self,x):         # Function to push given datapoint into DB
             
-            users = ref.child('users/player') 
-          #  file = open(r"weapons.json","r")
-          #  json.load(file)
+            users = ref.child('users/player')
             users.push({
                 x.id:{"typee":x.typee,
                        "Name" : x.name,
@@ -158,6 +143,12 @@ class blow:
                        "weapons" : [],
                        "powerups": {}
                     }})
+    
+    file = open(r"weapons.json","r")
+    i=json.load(file)
+    armoury = ref.child('weapons')
+    armoury.push(i)
+
         
 i=blow(os.getenv("token"))
 print(i.run())
