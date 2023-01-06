@@ -107,24 +107,24 @@ class blow:
             # TODO : dependence of attack on XP points
             await context.message.reply(str(player.combat(opponent)))
         
-        @self.bot.command(name="buy")
+       # @self.bot.command(name="buy")
 
-        async def buy(context):
-            shop = discord.Embed(title="Armoury")
-            shop.set_author(name=context.author.display_name,icon_url=context.author.avatar_url)
-            shop.addfield(name="Buy:",value=f"""
-                                {}
-                          """)
-        @self.bot.command(name="hunt")
-        
-        async def hunt(context):
-            pass
-
-        @self.bot.command(name="abandon")
-
-        async def abandon(context):
-            pass
-
+       # async def buy(context):
+       #     shop = discord.Embed(title="Armoury")
+       #     shop.set_author(name=context.author.display_name,icon_url=context.author.avatar_url)
+       #     shop.addfield(name="Buy:",value=f"""
+       #                         {}
+       #                   """)
+#        @self.bot.command(name="hunt")
+#        
+#        async def hunt(context):
+#            pass
+#
+#        @self.bot.command(name="abandon")
+#
+#        async def abandon(context):
+#            pass
+#
     def bulk_store(self):      # Function to store all the members in the server
         for i in self.bot.get_all_members():
             x=user(i.id,i.name)
