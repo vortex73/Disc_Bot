@@ -1,4 +1,5 @@
 import os
+#import message 
 from dotenv import load_dotenv
 import firebase_admin
 import random
@@ -107,16 +108,49 @@ class blow:
             # TODO : dependence of attack on XP points
             await context.message.reply(str(player.combat(opponent)))
         
-       # @self.bot.command(name="buy")
+        @self.bot.command(name="weapon",help="Lists out the weapons in the Store.")
 
-       # async def buy(context):
-       #     shop = discord.Embed(title="Armoury")
-       #     shop.set_author(name=context.author.display_name,icon_url=context.author.avatar_url)
-       #     shop.addfield(name="Buy:",value=f"""
-       #                         {}
-       #                   """)
-#        @self.bot.command(name="hunt")
-#        
+        async def weapon(context):
+            w = ref.child("weapons")
+            #g = w.get()
+            #wname = list(g.values())
+            shop = discord.Embed(title="Shop")
+            shop.set_author(name=context.author.display_name ,icon_url=context.author.avatar_url)
+            shop.set_thumbnail(url="https://ak.picdn.net/shutterstock/videos/1059212528/thumb/9.jpg?ip=x480")
+            for i in w.get().values():   # i={weapons:[{guns:{}}]}
+                for j in i.values():     # j=[{guns:{},melee:{}}] list of categories
+                    for k in j:          # k={guns:{}}
+                        for l in k:         # l=guns
+                            lis = []
+                            for m in k[l]:
+                                lis.append(m)
+                                liss = '\n'.join(lis)
+                            shop.add_field(name=f"{l}",value=f"{liss}")
+            await context.message.reply(embed=shop)
+
+
+
+        @self.bot.command(name="buy",help="To buy weapons from Store.")
+
+        async def buy(context,item):
+            u = ref.child("users/player")
+            for i in u.get():
+                for j in u.get().values():
+                    for k in j:
+                        if int(k)==int(context.message.author.id):
+                            j[k]["weapons"].update({"bazooka":2000})  # test code to add(update) one article to the db
+                            u.update({i:j})
+                            break
+                        else:
+                            continue
+                break
+
+                   
+
+
+
+           #        @self.bot.command(name="hunt")
+#           
 #        async def hunt(context):
 #            pass
 #
@@ -140,7 +174,7 @@ class blow:
                        "level" : x.level,
                        "health":x.health,
                        "power" : x.power,
-                       "weapons" : [],
+                       "weapons" : {"Stick":20},
                        "powerups": {}
                     }})
     
@@ -151,5 +185,8 @@ class blow:
 
         
 i=blow(os.getenv("token"))
+
+
+#i.bot.load_extension(r"message.py") # TBD in final steps.
 print(i.run())
 
