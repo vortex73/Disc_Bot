@@ -3,16 +3,18 @@ import os
 from StringProgressBar import progressBar
 from dotenv import load_dotenv
 import firebase_admin
+from typing import List
 import random
 import json
 import discord
+from discord import app_commands
 from firebase_admin import credentials
 from firebase_admin import db
 from discord import Game, embeds
 from discord.ext.commands import Bot
-BOTPREFIX = "?"
+BOTPREFIX = "/"
 load_dotenv()
-intents = discord.Intents.default()
+intents = discord.Intents.all()
 intents.members = True
 intents.presences = True
 c = credentials.Certificate(r"key.json")
@@ -46,15 +48,18 @@ class chars:  #Parent Class for general charachter outline
             return True
         else:
             return False
-    
-    async def caution(self,c,b): # c is context
+    @app_commands.command() 
+    async def caution(self,c): # c is context
         warn = discord.Embed(title = "Warning!")
         warn.set_thumbnail(url="")
         warn.add_field(name="",value="")
         await c.message.reply(embed=warn)
-        replyy = b.wait_for()
+        #def test(msg,user):
+         #   return user==b.message.author and   
+        #replyy = b.wait_for("reaction_add",check=test)
     def hunt():
         pass
+    #async def autoc(interaction:discord.Interaction,msg:str)
     def abandon(self):
         self.xp-=10
         return False
@@ -98,12 +103,19 @@ class blow:
         
         @self.bot.event
         async def on_ready():
-            await self.bot.change_presence(activity=Game(name="Kola Theme"))
+            await self.bot.change_presence(activity=Game(name="Games"))
             self.bulk_store()
             print("[*] Connected to Discord as: " + self.bot.user.name)
+            try:
+                s = await self.bot.tree.sync() # syncs the bot slash commands
+                print(f"{s}")
 
+            except Exception as e :
+                print(e)
+       
+            
+            
         @self.bot.command(name='stats')
-
         async def stats(context):
            # player = {"join_server_date": "2020:2:2","xp_points":20}
            # await context.message.reply(embeds = embed) 
@@ -116,21 +128,30 @@ class blow:
             embed.add_field(name="",value="""<Write something here>""",inline=True)
             await context.message.reply(embed=embed)
 
-        @self.bot.command(name="attack",help="Attack the Enemy")
-        
-        async def atck(context):
-            player = user(context.author.id,context.author.display_name,power=10)
+        @self.bot.tree.command()
+        #@app_commands.autocomplete(atk=auto_cmd)
+        async def attack(interaction :discord.Interaction,item:str):
+            #player = user(context.author.id,context.author.display_name,power=10)
             # Opponent definition
-            opponent = evil(power=50)
-            if opponent.xp-player.xp>10:
-                await player.caution(context)
-                if player.combat(opponent):
-                    await context.message.reply("You Won!")
-                    await context.message.reply(player.inc_level())
-                else:
-                    await context.message.reply("You Lost")
-                            
-                       
+            await interaction.response.send_message(f"{item}",ephemeral=True)
+            #await context.message.reply(atk)
+       #     opponent = evil(power=50)
+       #     if opponent.xp-player.xp>10:
+       #         await player.caution(context)
+       #         if player.combat(opponent):
+       #             await context.message.reply("You Won!")
+       #             await context.message.reply(player.inc_level())
+       #         else:
+       #             await context.message.reply("You Lost")
+       #                     
+                      
+
+        @attack.autocomplete("item") 
+        async def auto_cmd(interaction:discord.Interaction,current:str)->List[app_commands.Choice[str]]:
+            l = []
+            for x in ["powerup","kick","punch"]:
+                l.append(app_commands.Choice(name=x,value=x))
+            return l
         @self.bot.command(name="weapon",help="Lists out the weapons in the Store.")
 
         async def weapon(context):
