@@ -1,30 +1,34 @@
 {
-"weapons":[{"guns":{"pistol":10,
-                    "junkyard gun":15,
-                    "QQ9":20,
-                    "AK47":24
+"weapons":[{"Guns":{"Pistol":[750,10],
+                    "Junkyard Gun":[800,15],
+                    "QQ9":[890,20],
+                    "AK47":[960,24]
                     }
             },
-           {"melee":{"basic knives":45,
-                     "katana":55,
-                     "brass knuckles":65,
-                     "simple staff":72,
-                     "Bahubali's sword":85,
-                     "Alexander's staff":94,
-                     "Zoro's 3 katana":110
+           {"Melee":{"Basic Knives":[1050,45],
+                     "Katana":[1200,55],
+                     "Brass Knuckles":[1500,65],
+                     "Simple Staff":[3000,72],
+                     "Bahubali's Sword":[4500,85],
+                     "Alexander's Staff":[5400,94],
+                     "Zoro's Katana":[6000,110]
                      }
             },
-            {"blunt melee":{"mace of night":65,
-                            "Hercules mace":78,
-                            "Cyclops hammer":84,
-                            "Viking bludgeon":92
+            {"Blunt Melee":{"Mace of Night":[1500,65],
+                            "Hercules Mace":[2000,78],
+                            "Cyclops Hammer":[3500,84],
+                            "Viking Bludgeon":[4500,92]
                             }
             },
-            {"mystical armaments":{"Hammer of Thor":45,
-                                   "Fortuna's spear":49,
-                                   "Apollo's wrath":55,
-                                   "Luke's light saber":65
+            {"Mystical Armaments":{"Hammer of Thor":[3000,45],
+                                   "Fortuna's Spear":[4500,49],
+                                   "Apollo's Wrath":[5555,55],
+                                   "Luke's Light Saber":[6770,65]
                                    }
-            }
-          ]
-}                    
+  }
+  ]
+                     
+}  
+           
+            
+

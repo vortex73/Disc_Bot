@@ -1,5 +1,6 @@
 import os
 #import message 
+from StringProgressBar import progressBar
 from dotenv import load_dotenv
 import firebase_admin
 import random
@@ -20,6 +21,8 @@ firebase_admin.initialize_app(c, {'databaseURL': 'https://discbot-f50a9-default-
 #client = discord.Client(command_prefix = "!",intents = intents)
 ref = db.reference("/")
 
+
+
 class chars:  #Parent Class for general charachter outline
     def __init__(self,typee,power,health,xp,value):
         self.typee = typee
@@ -30,7 +33,7 @@ class chars:  #Parent Class for general charachter outline
     
     def combat(self,x):
         while True:
-            hit_prob = random.random()*self.power
+            hit_prob = (1-random.random()**self.xp)*self.power
             x_hit_prob = random.random()*x.power
             self.health -= x_hit_prob
             x.health -= hit_prob
@@ -40,28 +43,39 @@ class chars:  #Parent Class for general charachter outline
         print(hit_prob,x_hit_prob)
         print(self.health,x.health)
         if self.health>x.health:
-            return "You Won!"
+            return True
         else:
-            return "You lost."
-
+            return False
+    
+    async def caution(self,c,b): # c is context
+        warn = discord.Embed(title = "Warning!")
+        warn.set_thumbnail(url="")
+        warn.add_field(name="",value="")
+        await c.message.reply(embed=warn)
+        replyy = b.wait_for()
     def hunt():
         pass
-    def abandon():
-        pass
-
-    def level():
-        pass
+    def abandon(self):
+        self.xp-=10
+        return False
+    def get_level(self):
+        bar = progressBar.filledBar(6,self.level)[1]
+        return bar
     def buy():
         pass
-    
+    def inc_level(self):
+        self.level+=1
+        return f"Congrats! {self.name} your level is now {self.level}"
+        
     # Space to add more player actions
 
 class user(chars):    #Class for player
-    def __init__(self,id,name,typee="Player",power=None,health=100,xp=0,value=None,level=1):
+    def __init__(self,id,name,typee="Player",power=None,health=100,xp=0,value=None,level=1,money=0):
         super().__init__(typee,power,health,xp,value)
         self.level = level
         self.id = id
         self.name = name
+        self.money = money
 class evil(chars):  #Class for opponents
     def __init__(self,power, typee="System wardogs", health=100, xp=1000, value=None):
         super().__init__(typee, power, health, xp, value)
@@ -91,23 +105,32 @@ class blow:
         @self.bot.command(name='stats')
 
         async def stats(context):
-            player = {"join_server_date": "2020:2:2","xp_points":20}
+           # player = {"join_server_date": "2020:2:2","xp_points":20}
            # await context.message.reply(embeds = embed) 
             #await self.bot.say("So you want stats?")
-            embed = discord.Embed(title = "")
-            embed.set_author(name=context.author.display_name,icon_url=context.author.avatar_url)
+            u = ref.child("user/player")
+
+            embed = discord.Embed(title = "Player Stats")
+            embed.set_author(name=context.author.display_name)
+            embed.set_thumbnail(url=context.author.avatar_url)
             embed.add_field(name="",value="""<Write something here>""",inline=True)
             await context.message.reply(embed=embed)
 
-        @self.bot.command(name="attack")
+        @self.bot.command(name="attack",help="Attack the Enemy")
         
         async def atck(context):
             player = user(context.author.id,context.author.display_name,power=10)
             # Opponent definition
             opponent = evil(power=50)
-            # TODO : dependence of attack on XP points
-            await context.message.reply(str(player.combat(opponent)))
-        
+            if opponent.xp-player.xp>10:
+                await player.caution(context)
+                if player.combat(opponent):
+                    await context.message.reply("You Won!")
+                    await context.message.reply(player.inc_level())
+                else:
+                    await context.message.reply("You Lost")
+                            
+                       
         @self.bot.command(name="weapon",help="Lists out the weapons in the Store.")
 
         async def weapon(context):
@@ -123,12 +146,16 @@ class blow:
                         for l in k:         # l=guns
                             lis = []
                             for m in k[l]:
-                                lis.append(m)
-                                liss = '\n'.join(lis)
+                                lis.append(f"**{m}** : {k[l][m][0]}")
+                            liss = '\n'.join(lis)
                             shop.add_field(name=f"{l}",value=f"{liss}")
             await context.message.reply(embed=shop)
-
-
+        @self.bot.command(name = "level",help="Your level.")
+        async def lvl(context):
+            client = user(context.author.id,context.author.display_name)
+            lvl = discord.Embed(title="Your Level:")
+            lvl.add_field(name="",value=client.get_level())
+            await context.message.reply(embed=lvl)
 
         @self.bot.command(name="buy",help="To buy weapons from Store.")
 
@@ -148,11 +175,10 @@ class blow:
                    
 
 
-
-           #        @self.bot.command(name="hunt")
+        @self.bot.command(name="hunt")
 #           
-#        async def hunt(context):
-#            pass
+        async def hunt(context):
+           pass 
 #
 #        @self.bot.command(name="abandon")
 #
@@ -173,6 +199,7 @@ class blow:
                        "xp" : x.xp,
                        "level" : x.level,
                        "health":x.health,
+                       "money" : x.money,
                        "power" : x.power,
                        "weapons" : {"Stick":20},
                        "powerups": {}
