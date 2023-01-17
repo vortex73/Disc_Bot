@@ -15,25 +15,25 @@ Bot = commands.Bot(command_prefix=".", intents=intents)
 
 
 @Bot.event
-async def on_ready():
-    print("I am online")
+async def if_ready():
+    print("I am online")   #For bot to tell when it's online
 
 @Bot.event
 async def on_member_join(member):
     await Bot.get_channel(1044294754818609216).send("Welcome {}".format(member.mention)) # Welcome msg 
 
 @Bot.command(name="clear")
-async def clear(ctx,amount=5):
-    await ctx.channel.purge(limit=amount)
+async def clear(msgs,amount=5):
+    await msgs.channel.purge(limit=amount)
 
 @Bot.command(name="nuke")
-async def clear(ctx):
-    await ctx.channel.purge()
+async def clear(msgs):
+    await msgs.channel.purge()
 
 @tasks.loop(seconds=10) #checks if new video is uploaded every 10 seconds
 async def check():
     with open("youtube.json","r") as file:  
-        youtubedata=json.load(file)
+        youtubedata = json.load(file)
 
     for yt_channel in youtubedata:  
         channel_url = f"https://www.youtube.com/channel/{yt_channel}"   #generates youtube channel's url
@@ -57,11 +57,30 @@ async def check():
             await discordchannel.send(display_msg)
             #notifies server when video is uploaded and the above msg is displayed
 
+@Bot.command(name="add") #Adding more youtube channels to json file
+async def add_youtubedata(yt_data,channel_id:str,channel_name:str):
+     with open("youtube.json","r") as file:
+         youtubedata = json.load(file)   #load() used to read files
+
+    youtubedata[str(channel_id)] = {}
+    youtubedata[str(channel_id)]["channel_name"] = channel_name
+    youtubedata[str(channel_id)]["video_url"] = "none"
+    youtubedata[str(channel_id)]["notify_discordchannel"] = "1044294754818609213"
+
+    with open("youtube.json", "w") as file:
+        json.dump(youtubedata,file)     #dump used to write on files
+
+    await yt_data.send("Added succesfully")
 
 
+@Bot.command(name="start-yt")  #function to tell the bot to start otifying
+async def start_notifications(notify):
+    check.start()
+    await notify.send("Now notifying")
 
-
-
-        
+@Bot.command(name="stop-yt")  #function to tell the bot to stop notifying
+async def stop_notifications(notify):
+    check.stop()
+    await notify.send("Stopped notifying")
 
 Bot.run(os.getenv("token"))
