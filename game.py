@@ -12,7 +12,7 @@ from firebase_admin import credentials
 from firebase_admin import db
 from discord import Game, embeds
 from discord.ext.commands import Bot
-BOTPREFIX = "/"
+BOTPREFIX = "!"
 load_dotenv()
 intents = discord.Intents.all()
 intents.members = True
@@ -32,22 +32,76 @@ class chars:  #Parent Class for general charachter outline
         self.health = health
         self.xp = xp 
         self.value = value
-    
-    def combat(self,x):
-        while True:
-            hit_prob = (1-random.random()**self.xp)*self.power
-            x_hit_prob = random.random()*x.power
-            self.health -= x_hit_prob
-            x.health -= hit_prob
-            if self.health or x.health == 0:
-                break
 
-        print(hit_prob,x_hit_prob)
-        print(self.health,x.health)
-        if self.health>x.health:
-            return True
-        else:
-            return False
+    def store_hp(self,id,hp):
+
+        w = ref.child("users")
+        for i in w.get():
+            for j in w.get().values():
+                for k in j:
+                    for l in j[k]:
+                        #print(l)
+                        if l==id:
+                            for m in j[k][l]:
+                                if m=="health":
+                                    j[k][l][m]=int(hp)
+                    w.update({i:j})
+    def get_hp(self,id):
+        w = ref.child("users")
+        for i in w.get():
+            for j in w.get().values():
+                for k in j:
+                    for l in j[k]:
+                        #print(l)
+                        if l==id:
+                            for m in j[k][l]:
+                                if m=="health":
+                                    return int(j[k][l][m])
+
+    def combat(self,x,id,atck):
+
+        while True:
+            player_health = self.get_hp(id)
+            oppo_hp = 100
+            if atck=="kick":
+                x.block()
+                if x.lower_blk==1:
+                    return False
+                else:
+                    hit_prob = (1-random.random())*self.power
+                    x_hit_prob = (1-random.random())*x.power
+                    player_health-=x_hit_prob
+                    oppo_hp-=hit_prob
+                    print(hit_prob,x_hit_prob)
+                    print(player_health,oppo_hp)
+
+                    return [player_health,oppo_hp]
+
+            else:
+                x.block()
+                if x.upper_blk==1:
+                    return False
+                else:
+                    hit_prob = (1-random.random()**self.xp)*self.power
+                    x_hit_prob = (1-random.random()**x.xp)*x.power
+                    player_health-=x_hit_prob
+                    oppo_hp-=hit_prob
+                    
+                    print(hit_prob,x_hit_prob)
+                    print(player_health,oppo_hp)
+                    return [player_health,oppo_hp]
+            #hit_prob = (1-random.random()**self.xp)*self.power
+            #x_hit_prob = random.random()*x.power
+            #self.health -= x_hit_prob
+            #x.health -= hit_prob
+           # if self.health or x.health == 0:
+            #    break
+
+        #if self.health>x.health:
+        #    return True
+       # else:
+        #    return False
+    
     @app_commands.command() 
     async def caution(self,c): # c is context
         warn = discord.Embed(title = "Warning!")
@@ -82,8 +136,12 @@ class user(chars):    #Class for player
         self.name = name
         self.money = money
 class evil(chars):  #Class for opponents
-    def __init__(self,power, typee="System wardogs", health=100, xp=1000, value=None):
+    def __init__(self,power, typee="System wardogs", health=100, xp=1000, value=None,lower_blk=0,upper_blk=0):
         super().__init__(typee, power, health, xp, value)
+    def block(self):
+        self.lower_blk=random.choice([0,1])
+        self.upper_blk=random.choice([0,1])
+            
 
 class blow:
 
@@ -114,6 +172,17 @@ class blow:
             except Exception as e :
                 print(e)
 
+        def get(name):
+            w = ref.child("weapons")
+            for i in w.get().values():   # i={weapons:[{guns:{}}]}
+                for j in i.values():  # j=[{guns:{},melee:{}}] list of categories\
+                    for k in j:   
+                        for l in k:         # l=guns 
+                            for m in k[l]:
+                                if m==name:
+                                    return k[l][m]
+
+
          
         async def atk_cmd(i:discord.Interaction,current:str)->list[app_commands.Choice[str]]:
             l = []
@@ -127,22 +196,22 @@ class blow:
                     cat = []
                     for k in j:          # k={guns:{}}
                         for l in k:         # l=guns
-                            cat.append(app_commands.Choice(name=l,value=l))
-            return cat
+                            cat.append(app_commands.Choice(name=l,value=l)) 
+            return cat 
         async def buy_item(i:discord.Interaction,current:str)->list[app_commands.Choice[str]]:
             w = ref.child("weapons")
             for i in w.get().values():   # i={weapons:[{guns:{}}]}
                 
                 for j in i.values():  # j=[{guns:{},melee:{}}] list of categories\
-                    dic={}
-                    for k in j:          # k={guns:{}}
-                        for l in k:         # l=guns
-                            lis=[]
+                    lis=[]
+                    for k in j:   
+                        for l in k:         # l=guns 
+                            
                             for m in k[l]:
                                 lis.append(app_commands.Choice(name=m,value=m))
-                            dic[l]=lis
-                    print(dic)
-                    return dic
+                        
+                    #print(dic)
+                    return lis
 
             
               
@@ -172,12 +241,23 @@ class blow:
             await context.message.reply(embed=embed)
 
         @self.bot.tree.command()
-        @app_commands.autocomplete(item=atk_cmd)
+        @app_commands.autocomplete(attack=atk_cmd)
         #@app_commands.autocomplete(atk=auto_cmd)
-        async def attack(i :discord.Interaction,item:str):
-            #player = user(context.author.id,context.author.display_name,power=10)
-            # Opponent definition
-            await i.response.send_message(f"{item}",ephemeral=True)
+        async def attack(i :discord.Interaction,attack:str):
+            player = user(i.user.id,i.user.display_name,power=10)
+            oppo = evil(power=30)
+            fn=player.combat(oppo,str(i.user.id),attack)
+            if fn != False:
+                player.store_hp(id,fn[0])
+                if int(fn[0])>0 and int(fn[1])>0:
+                    await i.response.send_message(f"Your health:{fn[0]},oppo health:{fn[1]}")
+                else:
+                    await i.response.send_message("yowza")
+
+            else:
+                await i.response.send_message(f"your attack was blocked")
+            
+           # await i.response.send_message(f"{attack}",ephemeral=True)
             #await context.message.reply(atk)
        #     opponent = evil(power=50)
        #     if opponent.xp-player.xp>10:
@@ -190,14 +270,14 @@ class blow:
        #                     
                       
 
-        
-        @self.bot.tree.command()
-        async def weapon(context):
+        @self.bot.tree.command(name="weapon",description="Lists out the weapons in the Store.")
+
+        async def weapon(interaction):
             w = ref.child("weapons")
             #g = w.get()
             #wname = list(g.values())
             shop = discord.Embed(title="Shop")
-            shop.set_author(name=context.author.display_name ,icon_url=context.author.avatar_url)
+            shop.set_author(name=interaction.user.display_name ,icon_url=interaction.user.display_avatar)
             shop.set_thumbnail(url="https://ak.picdn.net/shutterstock/videos/1059212528/thumb/9.jpg?ip=x480")
             for i in w.get().values():   # i={weapons:[{guns:{}}]}
                 for j in i.values():     # j=[{guns:{},melee:{}}] list of categories
@@ -208,26 +288,30 @@ class blow:
                                 lis.append(f"**{m}** : {k[l][m][0]}")
                             liss = '\n'.join(lis)
                             shop.add_field(name=f"{l}",value=f"{liss}")
-            await context.message.reply(embed=shop)
+            await interaction.response.send_message(embed=shop,ephemeral=True)
 
-
-        @self.bot.tree.command()
+        @self.bot.tree.command(name="level",description="know your level")
         async def lvl(context):
-            client = user(context.author.id,context.author.display_name)
+            client = user(context.user.id,context.user.display_name)
             lvl = discord.Embed(title="Your Level:")
             lvl.add_field(name="",value=client.get_level())
-            await context.message.reply(embed=lvl)
+            await context.response.send_message(embed=lvl)
 
         @self.bot.tree.command()
        # @app_commands.autocomplete(item=buy_item)
-        @app_commands.autocomplete(category=buy_cmd)
-        async def buy(i:discord.Interaction,category:str)->list[app_commands.Choice[str]]:
-             await i.response.send_message(f"{category}",ephemeral=True)
+        @app_commands.autocomplete(category=buy_cmd,item=buy_item)
+        async def buy(i:discord.Interaction,category:str,item:str)->list[app_commands.Choice[str]]:
+             purchase = discord.Embed(title = "Your Purchase")
+             purchase.add_field(name="category",value=category)
+             purchase.add_field(name="Item",value=item)
+             purchase.add_field(name="Cost",value=get(item)[0])
+             purchase.add_field(name="Damage",value=get(item)[1])
+             await i.response.send_message(embed=purchase,ephemeral=True)
         
-        @app_commands.autocomplete(item=buy_item)
-        async def buying(i:discord.Interaction,item:str)->list[app_commands.Choice[str]]:
+       # @app_commands.autocomplete(item=buy_item)
+       # async def buying(i:discord.Interaction,item:str)->list[app_commands.Choice[str]]:
 
-
+ 
 
 
 #            u = ref.child("users/player")
