@@ -120,7 +120,31 @@ class blow:
             for x in ["powerup","kick","punch"]:
                 l.append(app_commands.Choice(name=x,value=x))
             return l
+        async def buy_cmd(i:discord.Interaction,current:str)->list[app_commands.Choice[str]]:
+            w = ref.child("weapons")
+            for i in w.get().values():   # i={weapons:[{guns:{}}]}
+                for j in i.values():  # j=[{guns:{},melee:{}}] list of categories\
+                    cat = []
+                    for k in j:          # k={guns:{}}
+                        for l in k:         # l=guns
+                            cat.append(app_commands.Choice(name=l,value=l))
+            return cat
+        async def buy_item(i:discord.Interaction,current:str)->list[app_commands.Choice[str]]:
+            w = ref.child("weapons")
+            for i in w.get().values():   # i={weapons:[{guns:{}}]}
+                
+                for j in i.values():  # j=[{guns:{},melee:{}}] list of categories\
+                    dic={}
+                    for k in j:          # k={guns:{}}
+                        for l in k:         # l=guns
+                            lis=[]
+                            for m in k[l]:
+                                lis.append(app_commands.Choice(name=m,value=m))
+                            dic[l]=lis
+                    print(dic)
+                    return dic
 
+            
               
             
             
@@ -194,9 +218,18 @@ class blow:
             lvl.add_field(name="",value=client.get_level())
             await context.message.reply(embed=lvl)
 
-#        @self.bot.tree.command()
-#        @app_commands.autocomplete(item=atk_cmd)
-#        async def buy(context,i:discord.Interaction,item:str)->list[app_commands.Choice[str]]:
+        @self.bot.tree.command()
+       # @app_commands.autocomplete(item=buy_item)
+        @app_commands.autocomplete(category=buy_cmd)
+        async def buy(i:discord.Interaction,category:str)->list[app_commands.Choice[str]]:
+             await i.response.send_message(f"{category}",ephemeral=True)
+        
+        @app_commands.autocomplete(item=buy_item)
+        async def buying(i:discord.Interaction,item:str)->list[app_commands.Choice[str]]:
+
+
+
+
 #            u = ref.child("users/player")
 #            for i in u.get():
 #                for j in u.get().values():
@@ -212,10 +245,9 @@ class blow:
                    
 
 
-        @self.bot.tree.command()
-#           
-        async def hunt(context):
-           pass 
+       # @self.bot.tree.command() 
+       # async def hunt(context):
+       #    pass 
 #
 #        @self.bot.command(name="abandon")
 #
