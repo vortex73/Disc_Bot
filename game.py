@@ -113,10 +113,18 @@ class blow:
 
             except Exception as e :
                 print(e)
-       
+
+         
+        async def atk_cmd(i:discord.Interaction,current:str)->list[app_commands.Choice[str]]:
+            l = []
+            for x in ["powerup","kick","punch"]:
+                l.append(app_commands.Choice(name=x,value=x))
+            return l
+
+              
             
             
-        @self.bot.command(name='stats')
+        @self.bot.tree.command()
         async def stats(context):
            # player = {"join_server_date": "2020:2:2","xp_points":20}
            # await context.message.reply(embeds = embed) 
@@ -140,11 +148,12 @@ class blow:
             await context.message.reply(embed=embed)
 
         @self.bot.tree.command()
+        @app_commands.autocomplete(item=atk_cmd)
         #@app_commands.autocomplete(atk=auto_cmd)
-        async def attack(interaction :discord.Interaction,item:str):
+        async def attack(i :discord.Interaction,item:str):
             #player = user(context.author.id,context.author.display_name,power=10)
             # Opponent definition
-            await interaction.response.send_message(f"{item}",ephemeral=True)
+            await i.response.send_message(f"{item}",ephemeral=True)
             #await context.message.reply(atk)
        #     opponent = evil(power=50)
        #     if opponent.xp-player.xp>10:
@@ -157,14 +166,8 @@ class blow:
        #                     
                       
 
-        @attack.autocomplete("item") 
-        async def auto_cmd(interaction:discord.Interaction,current:str)->List[app_commands.Choice[str]]:
-            l = []
-            for x in ["powerup","kick","punch"]:
-                l.append(app_commands.Choice(name=x,value=x))
-            return l
-        @self.bot.command(name="weapon",help="Lists out the weapons in the Store.")
-
+        
+        @self.bot.tree.command()
         async def weapon(context):
             w = ref.child("weapons")
             #g = w.get()
@@ -182,32 +185,34 @@ class blow:
                             liss = '\n'.join(lis)
                             shop.add_field(name=f"{l}",value=f"{liss}")
             await context.message.reply(embed=shop)
-        @self.bot.command(name = "level",help="Your level.")
+
+
+        @self.bot.tree.command()
         async def lvl(context):
             client = user(context.author.id,context.author.display_name)
             lvl = discord.Embed(title="Your Level:")
             lvl.add_field(name="",value=client.get_level())
             await context.message.reply(embed=lvl)
 
-        @self.bot.command(name="buy",help="To buy weapons from Store.")
-
-        async def buy(context,item):
-            u = ref.child("users/player")
-            for i in u.get():
-                for j in u.get().values():
-                    for k in j:
-                        if int(k)==int(context.message.author.id):
-                            j[k]["weapons"].update({"bazooka":2000})  # test code to add(update) one article to the db
-                            u.update({i:j})
-                            break
-                        else:
-                            continue
-                break
-
+#        @self.bot.tree.command()
+#        @app_commands.autocomplete(item=atk_cmd)
+#        async def buy(context,i:discord.Interaction,item:str)->list[app_commands.Choice[str]]:
+#            u = ref.child("users/player")
+#            for i in u.get():
+#                for j in u.get().values():
+#                    for k in j:
+#                        if int(k)==int(context.message.author.id):
+#                            j[k]["weapons"].update({f"{item}":2000})  # test code to add(update) one article to the db
+#                            u.update({i:j})
+#                            break
+#                        else:
+#                            continue
+#                break
+#
                    
 
 
-        @self.bot.command(name="hunt")
+        @self.bot.tree.command()
 #           
         async def hunt(context):
            pass 
