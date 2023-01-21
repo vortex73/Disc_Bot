@@ -39,25 +39,25 @@ class chars:  #Parent Class for general charachter outline
 
         w = ref.child("users")
         for i in w.get():
-            if int(i)==id:
+            if int(i)==int(id):
                 temp=w.get()[i]
                 temp["health"]=hp
-            w.update({i:temp})
+                w.update({i:temp})
     def get_hp(self,id):
         w = ref.child("users")
         for i in w.get():
-            if int(i)==id:
+            if int(i)==int(id):
                 return w.get()[i]["health"]
     def get_op_hp(self,id):
-        v = ref.child("users")[id]["Villains"][self.name]
-        return [v["health"],v["xp"]]
-    def str_op_hp(self,hp):
-        v = ref.child("users")
-        temp = v.get()[id][self.name] 
-        temp["health"]=hp
-        v.update({self.name:temp})
+        v = ref.child("users").get()[id]["Villains"][self.name]
+        return [v["health"],v["power"]]
+    def str_op_hp(self,id,hp):
+        v = ref.child("users") 
+        temp = v.get()[id]
+        temp["Villains"][self.name]["health"]=hp
+        v.update({id:temp})
     def combat(self,x,id,atck):
-        oppo_hp ,xp= self.get_op_hp(id)
+        oppo_hp ,xp= x.get_op_hp(id)
         player_health = self.get_hp(id)
         print(player_health,oppo_hp)
         if "kick" in atck:
@@ -66,13 +66,13 @@ class chars:  #Parent Class for general charachter outline
                 return False
             else:
                 hit_prob = (1-random.random()**self.xp)*self.power
-                x_hit_prob = (1-random.random()**xp)*x.power
+                x_hit_prob = (1-random.random()**x.xp)*x.power
                 player_health-=x_hit_prob
                 oppo_hp-=hit_prob
                 print(hit_prob,x_hit_prob)
                 print(player_health,oppo_hp)
                 self.store_hp(id,player_health)
-                x.str_op_hp(oppo_hp)
+                x.str_op_hp(id,oppo_hp)
                 return [player_health,oppo_hp]
 
         else:
@@ -81,14 +81,14 @@ class chars:  #Parent Class for general charachter outline
                 return False
             else:
                 hit_prob = (1-random.random()**self.xp)*self.power
-                x_hit_prob = (1-random.random()**xp)*x.power
+                x_hit_prob = (1-random.random()**x.xp)*x.power
                 player_health-=x_hit_prob
                 oppo_hp-=hit_prob
                 
                 print(hit_prob,x_hit_prob)
                 print(player_health,oppo_hp)
                 self.store_hp(id,player_health)
-                x.str_op_hp(oppo_hp)
+                x.str_op_hp(id,oppo_hp)
                 return [player_health,oppo_hp]
             #hit_prob = (1-random.random()**self.xp)*self.power
             #x_hit_prob = random.random()*x.power
@@ -178,7 +178,7 @@ class blow():
             
         def get_villain(x):
             l = x.level
-             
+            return "Boss"+str(l) 
         def get(name):
             w = ref.child("weapons")
             for i in w.get().values():   # i={weapons:[{guns:{}}]}
@@ -253,7 +253,8 @@ class blow():
         async def attack(i :discord.InteractionResponse,attack:str)->list[app_commands.Choice[str]]:
             player = user(i.user.id,i.user.display_name,power=10)
             v = get_villain(player)
-            oppo = evil(name=v[0],health=v[1],power=v[2])
+            x = ref.child("users").get()[str(i.user.id)]["Villains"][v]
+            oppo = evil(name=v,health=x["health"],power=x["power"])
             await i.response.defer()
             fn=player.combat(oppo,str(i.user.id),attack)
             if fn:
@@ -336,7 +337,6 @@ class blow():
 #
     def bulk_store(self):      # Function to store all the members in the server
         for i in self.bot.get_all_members():
-            print(ref.child("users").get())
             if ref.child("users").get()==None or i.id not in ref.child('users').get() :
                 x=user(i.id,i.name)
                 self.store(x)
@@ -354,11 +354,11 @@ class blow():
                        "power" : x.power,
                        "weapons" : {"Stick":20},
                        "powerups": {},
-                      "Villains": {'Boss1': {'health': 100, 'power': 10},
-                                   'Boss2': {'health': 100, 'power': 20},
-                                   'Boss3': {'health': 100, 'power': 30},
-                                   'Boss4': {'health': 100, 'power': 40},
-                                   'Boss5': {'health': 100, 'power': 50}
+                      "Villains": {'Boss1': {'health': 100, 'power': 10,'xp':10},
+                                   'Boss2': {'health': 100, 'power': 20,'xp':30},
+                                   'Boss3': {'health': 100, 'power': 30,'xp':50},
+                                   'Boss4': {'health': 100, 'power': 40,'xp':70},
+                                   'Boss5': {'health': 100, 'power': 50,'xp':100}
 }
                     }})
     
