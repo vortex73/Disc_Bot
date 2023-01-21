@@ -6,6 +6,7 @@ import firebase_admin
 from typing import List
 import random
 import json
+import asyncio
 import discord
 from discord import app_commands
 from firebase_admin import credentials
@@ -32,6 +33,7 @@ class chars:  #Parent Class for general charachter outline
         self.health = health
         self.xp = xp 
         self.value = value
+    #def get_setting():
 
     def store_hp(self,id,hp):
 
@@ -57,39 +59,47 @@ class chars:  #Parent Class for general charachter outline
                             for m in j[k][l]:
                                 if m=="health":
                                     return int(j[k][l][m])
-
+    def get_op_hp(self):
+        return ref.child("Villains").get()[self.name]["health"]
+    def str_op_hp(self,hp):
+        v = ref.child("Villains")
+        temp = v.get()[self.name] 
+        temp["health"]=hp
+        v.update({self.name:temp})
     def combat(self,x,id,atck):
-
-        while True:
-            player_health = self.get_hp(id)
-            oppo_hp = 100
-            if atck=="kick":
-                x.block()
-                if x.lower_blk==1:
-                    return False
-                else:
-                    hit_prob = (1-random.random())*self.power
-                    x_hit_prob = (1-random.random())*x.power
-                    player_health-=x_hit_prob
-                    oppo_hp-=hit_prob
-                    print(hit_prob,x_hit_prob)
-                    print(player_health,oppo_hp)
-
-                    return [player_health,oppo_hp]
-
+        oppo_hp = x.get_op_hp()
+        player_health = self.get_hp(id)
+        print(player_health,oppo_hp)
+        if "kick" in atck:
+            x.block()
+            if x.lower_blk==1:
+                return False
             else:
-                x.block()
-                if x.upper_blk==1:
-                    return False
-                else:
-                    hit_prob = (1-random.random()**self.xp)*self.power
-                    x_hit_prob = (1-random.random()**x.xp)*x.power
-                    player_health-=x_hit_prob
-                    oppo_hp-=hit_prob
-                    
-                    print(hit_prob,x_hit_prob)
-                    print(player_health,oppo_hp)
-                    return [player_health,oppo_hp]
+                hit_prob = (1-random.random()**self.xp)*self.power
+                x_hit_prob = (1-random.random()**x.xp)*x.power
+                player_health-=x_hit_prob
+                oppo_hp-=hit_prob
+                print(hit_prob,x_hit_prob)
+                print(player_health,oppo_hp)
+                self.store_hp(id,player_health)
+                x.str_op_hp(oppo_hp)
+                return [player_health,oppo_hp]
+
+        else:
+            x.block()
+            if x.upper_blk==1:
+                return False
+            else:
+                hit_prob = (1-random.random()**self.xp)*self.power
+                x_hit_prob = (1-random.random()**x.xp)*x.power
+                player_health-=x_hit_prob
+                oppo_hp-=hit_prob
+                
+                print(hit_prob,x_hit_prob)
+                print(player_health,oppo_hp)
+                self.store_hp(id,player_health)
+                x.str_op_hp(oppo_hp)
+                return [player_health,oppo_hp]
             #hit_prob = (1-random.random()**self.xp)*self.power
             #x_hit_prob = random.random()*x.power
             #self.health -= x_hit_prob
@@ -129,22 +139,22 @@ class chars:  #Parent Class for general charachter outline
     # Space to add more player actions
 
 class user(chars):    #Class for player
-    def __init__(self,id,name,typee="Player",power=None,health=100,xp=0,value=None,level=1,money=0):
+    def __init__(self,id,name,typee="Player",power=None,health=100,xp=1,value=None,level=1,money=0):
         super().__init__(typee,power,health,xp,value)
         self.level = level
         self.id = id
         self.name = name
         self.money = money
 class evil(chars):  #Class for opponents
-    def __init__(self,power, typee="System wardogs", health=100, xp=1000, value=None,lower_blk=0,upper_blk=0):
+    def __init__(self,name,power, typee="System wardogs", health=100, xp=1000, value=None,lower_blk=0,upper_blk=0):
         super().__init__(typee, power, health, xp, value)
+        self.name = name
     def block(self):
         self.lower_blk=random.choice([0,1])
         self.upper_blk=random.choice([0,1])
             
 
-class blow:
-
+class blow():
     def __init__(self,token):
         self.token = token
         self.bot = Bot(command_prefix = BOTPREFIX , intents = intents)
@@ -156,14 +166,14 @@ class blow:
 #        users = ref.child('users')
        # users.set({
        # users.push() # test code for firebase
-     
+    
     def initialize(self):
         
         @self.bot.event
         async def on_ready():
             await self.bot.change_presence(activity=Game(name="Koala"))
             await self.bot.change_presence(activity=Game(name="Games"))
-            self.bulk_store()
+            ## self.bulk_store()
             print("[*] Connected to Discord as: " + self.bot.user.name)
             try:
                 s = await self.bot.tree.sync() # syncs the bot slash commands
@@ -171,7 +181,12 @@ class blow:
 
             except Exception as e :
                 print(e)
-
+        def get_villain(x):
+            l = x.level
+            v = ref.child("Villains").get()
+            for i in v:
+                if str(l) in i:
+                    return [i,v[i]["health"],v[i]["power"]]
         def get(name):
             w = ref.child("weapons")
             for i in w.get().values():   # i={weapons:[{guns:{}}]}
@@ -201,7 +216,7 @@ class blow:
         async def buy_item(i:discord.Interaction,current:str)->list[app_commands.Choice[str]]:
             w = ref.child("weapons")
             for i in w.get().values():   # i={weapons:[{guns:{}}]}
-                
+                print(f"current = {current}") 
                 for j in i.values():  # j=[{guns:{},melee:{}}] list of categories\
                     lis=[]
                     for k in j:   
@@ -217,7 +232,7 @@ class blow:
               
             
             
-        @self.bot.tree.command()
+        @self.bot.tree.command(name="stats",description="Player stats.")
         async def stats(context):
            # player = {"join_server_date": "2020:2:2","xp_points":20}
            # await context.message.reply(embeds = embed) 
@@ -240,36 +255,25 @@ class blow:
 
             await context.message.reply(embed=embed)
 
-        @self.bot.tree.command()
+        @self.bot.tree.command(name="attack",description="Launch an attack on the nearest boss")
         @app_commands.autocomplete(attack=atk_cmd)
         #@app_commands.autocomplete(atk=auto_cmd)
-        async def attack(i :discord.Interaction,attack:str):
+        async def attack(i :discord.InteractionResponse,attack:str)->list[app_commands.Choice[str]]:
             player = user(i.user.id,i.user.display_name,power=10)
-            oppo = evil(power=30)
+            v = get_villain(player)
+            oppo = evil(name=v[0],health=v[1],power=v[2])
+            await i.response.defer()
             fn=player.combat(oppo,str(i.user.id),attack)
-            if fn != False:
-                player.store_hp(id,fn[0])
-                if int(fn[0])>0 and int(fn[1])>0:
-                    await i.response.send_message(f"Your health:{fn[0]},oppo health:{fn[1]}")
-                else:
-                    await i.response.send_message("yowza")
-
-            else:
-                await i.response.send_message(f"your attack was blocked")
+            if fn:
             
-           # await i.response.send_message(f"{attack}",ephemeral=True)
-            #await context.message.reply(atk)
-       #     opponent = evil(power=50)
-       #     if opponent.xp-player.xp>10:
-       #         await player.caution(context)
-       #         if player.combat(opponent):
-       #             await context.message.reply("You Won!")
-       #             await context.message.reply(player.inc_level())
-       #         else:
-       #             await context.message.reply("You Lost")
-       #                     
-                      
-
+                if fn[0]>0 and fn[1]>0 :
+                    await i.followup.send(f"Your health is {fn[0]},opponent health is {fn[1]}")
+                elif fn[0]<=0:
+                    await i.followup.send(f"You lost")
+                else:
+                    await i.followup.send("you won")
+            else:
+                await i.followup.send("Your attack was blocked")
         @self.bot.tree.command(name="weapon",description="Lists out the weapons in the Store.")
 
         async def weapon(interaction):
@@ -297,7 +301,7 @@ class blow:
             lvl.add_field(name="",value=client.get_level())
             await context.response.send_message(embed=lvl)
 
-        @self.bot.tree.command()
+        @self.bot.tree.command(name="buy",description="Purchase items from the store.")
        # @app_commands.autocomplete(item=buy_item)
         @app_commands.autocomplete(category=buy_cmd,item=buy_item)
         async def buy(i:discord.Interaction,category:str,item:str)->list[app_commands.Choice[str]]:
