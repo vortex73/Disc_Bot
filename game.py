@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 import firebase_admin
 from typing import List
 import random
+from datetime import datetime,timedelta
 import json
 import asyncio
 import discord
@@ -24,7 +25,7 @@ firebase_admin.initialize_app(c, {'databaseURL': 'https://discbot-f50a9-default-
 #client = discord.Client(command_prefix = "!",intents = intents)
 ref = db.reference("/")
 
-
+w = ref.child("users")
 
 class chars:  #Parent Class for general charachter outline
     def __init__(self,typee,power,health,xp,value):
@@ -121,22 +122,34 @@ class chars:  #Parent Class for general charachter outline
         bar = progressBar.filledBar(6,self.level)[1]
         return bar
     def buy():
-        pass
-    def inc_level(self):
+        pass 
+    def inc_level(self,id):
         self.level+=1
-        return f"Congrats! {self.name} your level is now {self.level}"
+        x = w.get()[id]
+        x["level"] = self.level
+        w.update({id:x})
+        with open("story.json") as f:
+            d = json.load(f)
+        a = d[str(self.level)]
+        level = discord.Embed(title="Level Up")
+        level.add_field(name="",value=f"Promoted to level {self.level}")
+       # level.set_thumbnail(url="https://img.freepik.com/premium-vector/game-icon-bonus-level-up-icon-new-level-logo-neon-icon-vector-illustration_100456-4960.jpg?w=740")
+        stry = discord.Embed(title="Next")
+        stry.add_field(name="",value=f"{a['stry']} ")
+      #  stry.set_thumbnail(url=f"{a['img']}")
+        return level,stry
         
     # Space to add more player actions
 
 class user(chars):    #Class for player
-    def __init__(self,id,name,typee="Player",power=None,health=100,xp=1,value=None,level=1,money=0):
+    def __init__(self,id,name,typee="Player",power=10,health=100,xp=1,value=None,level=1,money=0,blck=False):
         super().__init__(typee,power,health,xp,value)
         self.level = level
         self.id = id
         self.name = name
         self.money = money
 class evil(chars):  #Class for opponents
-    def __init__(self,name,power, typee="System wardogs", health=100, xp=1000, value=None,lower_blk=0,upper_blk=0):
+    def __init__(self,name,power=20, typee="System wardogs", health=100, xp=1000, value=None,lower_blk=0,upper_blk=0):
         super().__init__(typee, power, health, xp, value)
         self.name = name
     def block(self):
@@ -179,17 +192,6 @@ class blow():
         def get_villain(x):
             l = x.level
             return "Boss"+str(l) 
-        def get(name):
-            w = ref.child("weapons")
-            for i in w.get().values():   # i={weapons:[{guns:{}}]}
-                for j in i.values():  # j=[{guns:{},melee:{}}] list of categories\
-                    for k in j:   
-                        for l in k:         # l=guns 
-                            for m in k[l]:
-                                if m==name:
-                                    return k[l][m]
-
-
          
         async def atk_cmd(i:discord.Interaction,current:str)->list[app_commands.Choice[str]]:
             l = []
@@ -251,22 +253,37 @@ class blow():
         @app_commands.autocomplete(attack=atk_cmd)
         #@app_commands.autocomplete(atk=auto_cmd)
         async def attack(i :discord.InteractionResponse,attack:str)->list[app_commands.Choice[str]]:
-            player = user(i.user.id,i.user.display_name,power=10)
-            v = get_villain(player)
-            x = ref.child("users").get()[str(i.user.id)]["Villains"][v]
-            oppo = evil(name=v,health=x["health"],power=x["power"])
-            await i.response.defer()
-            fn=player.combat(oppo,str(i.user.id),attack)
-            if fn:
-            
-                if fn[0]>0 and fn[1]>0 :
-                    await i.followup.send(f"Your health is {fn[0]},opponent health is {fn[1]}")
-                elif fn[0]<=0:
-                    await i.followup.send(f"You lost")
+            u = ref.child("users")
+            t = u.get()[str(i.user.id)]["cooldown"]
+            if str(datetime.now())>t:
+
+                player = user(i.user.id,i.user.display_name,power=10)
+                v = get_villain(player)
+                x = ref.child("users").get()[str(i.user.id)]["Villains"][v]
+                oppo = evil(name=v,health=x["health"],power=x["power"])
+                await i.response.defer()
+                fn=player.combat(oppo,str(i.user.id),attack)
+                if fn:
+                
+                    if fn[0]>0 and fn[1]>0 :
+                        await i.followup.send(f"Your health is {fn[0]},opponent health is {fn[1]}")
+                    elif fn[0]<=0:
+                        await i.followup.send(f"You lost")
+                        for x in u.get():
+                            if int(i.user.id)==int(x):
+                                temp = u.get()[x]
+                                temp["cooldown"] = str(datetime.now()+timedelta(2))
+                                u.update({x:temp})
+
+                    else:
+                        a,b=player.inc_level(str(i.user.id))
+                        await i.followup.send(embeds=[a,b])
+
+                        
                 else:
-                    await i.followup.send("you won")
+                    await i.followup.send("Your attack was blocked")
             else:
-                await i.followup.send("Your attack was blocked")
+                await i.response.send_message(f"Your on Cooldown till {t}")
         @self.bot.tree.command(name="weapon",description="Lists out the weapons in the Store.")
 
         async def weapon(interaction):
@@ -325,16 +342,24 @@ class blow():
 #
                    
 
-
-       # @self.bot.tree.command() 
-       # async def hunt(context):
-       #    pass 
-#
-#        @self.bot.command(name="abandon")
-#
-#        async def abandon(context):
-#            pass
-#
+        @self.bot.tree.command(name="train",description="Train and gain more xp")
+        @app_commands.autocomplete(atck=atk_cmd)
+        async def hunt(i:discord.Interaction,atck:str)->list[app_commands.Choice[str]]:
+            player = user(i.user.id,i.user.display_name,power=10)
+            w = ref.child("users").get()
+            t = w[str(player.id)]["Villains"]["trainer"]
+            oppo = evil(name="trainer",health=t["health"],power=t["power"],xp=t["xp"])
+            await i.response.defer()
+            fn = player.combat(oppo,str(player.id),atck)
+            if fn:
+                if fn[0]>0 and fn[1]>0:
+                    await i.followup.send(f"your hp is {fn[0]} and opponent hp is {fn[1]}")
+                elif fn[0]<=0: 
+                    await i.followup.send(f"you lost")
+                else:
+                    await i.followup.send("you won")
+            else:
+                await i.followup.send("Your attack was blocked")
     def bulk_store(self):      # Function to store all the members in the server
         for i in self.bot.get_all_members():
             if ref.child("users").get()==None or i.id not in ref.child('users').get() :
@@ -353,12 +378,14 @@ class blow():
                        "money" : x.money,
                        "power" : x.power,
                        "weapons" : {"Stick":20},
+                       "cooldown":"",
                        "powerups": {},
                       "Villains": {'Boss1': {'health': 100, 'power': 10,'xp':10},
                                    'Boss2': {'health': 100, 'power': 20,'xp':30},
                                    'Boss3': {'health': 100, 'power': 30,'xp':50},
                                    'Boss4': {'health': 100, 'power': 40,'xp':70},
-                                   'Boss5': {'health': 100, 'power': 50,'xp':100}
+                                   'Boss5': {'health': 100, 'power': 50,'xp':100},
+                                   'trainer':{'health':100, 'power': x.power+5,'xp':x.xp+10}
 }
                     }})
     
