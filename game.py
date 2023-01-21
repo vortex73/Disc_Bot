@@ -39,35 +39,25 @@ class chars:  #Parent Class for general charachter outline
 
         w = ref.child("users")
         for i in w.get():
-            for j in w.get().values():
-                for k in j:
-                    for l in j[k]:
-                        #print(l)
-                        if l==id:
-                            for m in j[k][l]:
-                                if m=="health":
-                                    j[k][l][m]=int(hp)
-                    w.update({i:j})
+            if int(i)==id:
+                temp=w.get()[i]
+                temp["health"]=hp
+            w.update({i:temp})
     def get_hp(self,id):
         w = ref.child("users")
         for i in w.get():
-            for j in w.get().values():
-                for k in j:
-                    for l in j[k]:
-                        #print(l)
-                        if l==id:
-                            for m in j[k][l]:
-                                if m=="health":
-                                    return int(j[k][l][m])
-    def get_op_hp(self):
-        return ref.child("Villains").get()[self.name]["health"]
+            if int(i)==id:
+                return w.get()[i]["health"]
+    def get_op_hp(self,id):
+        v = ref.child("users")[id]["Villains"][self.name]
+        return [v["health"],v["xp"]]
     def str_op_hp(self,hp):
-        v = ref.child("Villains")
-        temp = v.get()[self.name] 
+        v = ref.child("users")
+        temp = v.get()[id][self.name] 
         temp["health"]=hp
         v.update({self.name:temp})
     def combat(self,x,id,atck):
-        oppo_hp = x.get_op_hp()
+        oppo_hp ,xp= self.get_op_hp(id)
         player_health = self.get_hp(id)
         print(player_health,oppo_hp)
         if "kick" in atck:
@@ -76,7 +66,7 @@ class chars:  #Parent Class for general charachter outline
                 return False
             else:
                 hit_prob = (1-random.random()**self.xp)*self.power
-                x_hit_prob = (1-random.random()**x.xp)*x.power
+                x_hit_prob = (1-random.random()**xp)*x.power
                 player_health-=x_hit_prob
                 oppo_hp-=hit_prob
                 print(hit_prob,x_hit_prob)
@@ -91,7 +81,7 @@ class chars:  #Parent Class for general charachter outline
                 return False
             else:
                 hit_prob = (1-random.random()**self.xp)*self.power
-                x_hit_prob = (1-random.random()**x.xp)*x.power
+                x_hit_prob = (1-random.random()**xp)*x.power
                 player_health-=x_hit_prob
                 oppo_hp-=hit_prob
                 
@@ -173,7 +163,7 @@ class blow():
         async def on_ready():
             await self.bot.change_presence(activity=Game(name="Koala"))
             await self.bot.change_presence(activity=Game(name="Games"))
-            ## self.bulk_store()
+            self.bulk_store()
             print("[*] Connected to Discord as: " + self.bot.user.name)
             try:
                 s = await self.bot.tree.sync() # syncs the bot slash commands
@@ -181,12 +171,14 @@ class blow():
 
             except Exception as e :
                 print(e)
+
+        @self.bot.event
+        async def on_member_join(x):
+            self.bulk_store()
+            
         def get_villain(x):
             l = x.level
-            v = ref.child("Villains").get()
-            for i in v:
-                if str(l) in i:
-                    return [i,v[i]["health"],v[i]["power"]]
+             
         def get(name):
             w = ref.child("weapons")
             for i in w.get().values():   # i={weapons:[{guns:{}}]}
@@ -344,13 +336,15 @@ class blow():
 #
     def bulk_store(self):      # Function to store all the members in the server
         for i in self.bot.get_all_members():
-            x=user(i.id,i.name)
-            self.store(x)
+            print(ref.child("users").get())
+            if ref.child("users").get()==None or i.id not in ref.child('users').get() :
+                x=user(i.id,i.name)
+                self.store(x)
 
     def store(self,x):         # Function to push given datapoint into DB
             
-            users = ref.child('users/player')
-            users.push({
+            users = ref.child('users')
+            users.update({
                 x.id:{"typee":x.typee,
                        "Name" : x.name,
                        "xp" : x.xp,
@@ -359,7 +353,13 @@ class blow():
                        "money" : x.money,
                        "power" : x.power,
                        "weapons" : {"Stick":20},
-                       "powerups": {}
+                       "powerups": {},
+                      "Villains": {'Boss1': {'health': 100, 'power': 10},
+                                   'Boss2': {'health': 100, 'power': 20},
+                                   'Boss3': {'health': 100, 'power': 30},
+                                   'Boss4': {'health': 100, 'power': 40},
+                                   'Boss5': {'health': 100, 'power': 50}
+}
                     }})
     
     file = open(r"weapons.json","r")
