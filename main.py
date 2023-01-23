@@ -9,7 +9,7 @@ load_dotenv()
 from help_message import help_message
 from music_func import music_func
 from game import game
-from message import Youtube
+from message import msg
 bot=commands.Bot(command_prefix="!",intents=intents)
 
 
@@ -23,7 +23,7 @@ async def on_ready():
     await bot.add_cog(help_message(bot))
     await bot.add_cog(music_func(bot))
     await bot.add_cog(game(bot))
-    await bot.add_cog(Youtube(bot))
+    await bot.add_cog(msg(bot))
     await bot.tree.sync()
 
 bot.run(os.getenv("token"))

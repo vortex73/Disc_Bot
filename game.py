@@ -79,23 +79,26 @@ class game(commands.Cog):
         #def get_setting():
 
         def store_hp(self,id,hp):
-
-            w = self.ref.child("users")
+            ref = db.reference("/")
+            w = ref.child("users")
             for i in w.get():
                 if int(i)==int(id):
                     temp=w.get()[i]
                     temp["health"]=hp
                     w.update({i:temp})
         def get_hp(self,id):
-            w = self.ref.child("users")
+            ref = db.reference("/")
+            w = ref.child("users")
             for i in w.get():
                 if int(i)==int(id):
                     return w.get()[i]["health"]
         def get_op_hp(self,id):
-            v = self.ref.child("users").get()[id]["Villains"][self.name]
+            ref = db.reference("/")
+            v = ref.child("users").get()[id]["Villains"][self.name]
             return [v["health"],v["power"]]
         def str_op_hp(self,id,hp):
-            v = self.ref.child("users") 
+            ref = db.reference("/")
+            v = ref.child("users") 
             temp = v.get()[id]
             temp["Villains"][self.name]["health"]=hp
             v.update({id:temp})
@@ -256,8 +259,8 @@ class game(commands.Cog):
                 d = json.load(f)
             stry = discord.Embed(title="Story")
             for x in d:
-                if int(x)<=int(self.w.get()[str(i.user.id)]["level"])+1:
-                    stry.add_field(name="",value=f"{d[x]['stry']}")
+                if int(x)<=int(self.w.get()[str(i.user.id)]["level"]):
+                    stry.add_field(name=f"Level {x}",value=f"{d[x]['stry']}")
             stry.set_image(url="https://rukminim1.flixcart.com/image/850/500/kuyf8nk0/poster/t/3/6/medium-the-punisher-frank-castle-marvel-comics-matte-finish-original-imag7ys46cfaurh6.jpeg?q=90")
             await i.followup.send(embed=stry)
                     
@@ -300,11 +303,18 @@ class game(commands.Cog):
                 oppo = self.evil(name=v,health=x["health"],power=x["power"])
                 await i.response.defer()
                 fn=player.combat(oppo,str(i.user.id),attack)
+                result = discord.Embed(title = "Status")
+                result.add_field(name="Match",value=f"{i.user.display_name} vs {v}")
                 if fn:
                 
                     if fn[0]>0 and fn[1]>0 :
-                        await i.followup.send(f"Your health is {fn[0]},opponent health is {fn[1]}")
+                       
+                        result.add_field(name="Your Health",value=progressBar.filledBar(100,int(fn[0]))[0],inline=False)
+                        result.add_field(name=f"{v} Health",value=progressBar.filledBar(100,int(fn[1]))[0],inline=False)
+                        result.set_footer(text="Use /attack to continue the match. HP resets in 20 minutes of inactivity",icon_url="")
+                        await i.followup.send(embed=result)
                     elif fn[0]<=0:
+                        result.add_field(name="Defeat",value="Starting 2 hour cooldown")
                         await i.followup.send(f"You lost")
                         for x in u.get():
                             if int(i.user.id)==int(x):
@@ -347,6 +357,12 @@ class game(commands.Cog):
             lvl.add_field(name="",value=client.get_level())
             await context.response.send_message(embed=lvl)
 
+        @self.bot.tree.command(name="balance",description="Check your Balance.")
+        async def balance(i:discord.Interaction):
+            await i.response.defer()
+            b = discord.Embed()
+            b.add_field(name="Balance",value=f"{self.w.get()[str(i.user.id)]['money']}")
+            await i.followup.send(embed=b,ephemeral=True)
         @self.bot.tree.command(name="buy",description="Purchase items from the store.")
        # @app_commands.autocomplete(item=buy_item)
         @app_commands.autocomplete(category=buy_cmd,item=buy_item)

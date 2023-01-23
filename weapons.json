@@ -1,11 +1,11 @@
 {
-"weapons":[{"Guns":{"Pistol":[750,10],
+"Guns":{"Pistol":[750,10],
                     "Junkyard Gun":[800,15],
                     "QQ9":[890,20],
                     "AK47":[960,24]
                     }
-            },
-           {"Melee":{"Basic Knives":[1050,45],
+            ,
+           "Melee":{"Basic Knives":[1050,45],
                      "Katana":[1200,55],
                      "Brass Knuckles":[1500,65],
                      "Simple Staff":[3000,72],
@@ -13,20 +13,20 @@
                      "Alexander's Staff":[5400,94],
                      "Zoro's Katana":[6000,110]
                      }
-            },
-            {"Blunt Melee":{"Mace of Night":[1500,65],
+            ,
+            "Blunt Melee":{"Mace of Night":[1500,65],
                             "Hercules Mace":[2000,78],
                             "Cyclops Hammer":[3500,84],
                             "Viking Bludgeon":[4500,92]
                             }
-            },
-            {"Mystical Armaments":{"Hammer of Thor":[3000,45],
+            ,
+            "Mystical Armaments":{"Hammer of Thor":[3000,45],
                                    "Fortuna's Spear":[4500,49],
                                    "Apollo's Wrath":[5555,55],
                                    "Luke's Light Saber":[6770,65]
                                    }
-  }
-  ]
+  
+  
                      
 }  
            
