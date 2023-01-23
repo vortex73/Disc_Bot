@@ -25,15 +25,49 @@ intents.presences = True
 class game(commands.Cog):
     def __init__(self,bot):
         self.bot = bot
-                
+         
         self.c = credentials.Certificate(r"key.json")
         firebase_admin.initialize_app(self.c, {'databaseURL': 'https://discbot-f50a9-default-rtdb.firebaseio.com/'})
 
 #client = discord.Client(command_prefix = "!",intents = intents)
         self.ref = db.reference("/")
-
+        self.weapon = self.ref.child("weapons")
         self.w = self.ref.child("users")
+        self.bulk_store() 
         self.initialize()
+    def bulk_store(self):      # Function to store all the members in the server
+        for i in self.bot.get_all_members():
+            if self.ref.child("users").get()==None or i.id not in self.ref.child('users').get() :
+                x=self.user(i.id,i.name)
+                self.store(x)
+
+    def store(self,x):         # Function to push given datapoint into DB
+            
+            users = self.ref.child('users')
+            users.update({
+                x.id:{"typee":x.typee,
+                       "Name" : x.name,
+                       "xp" : x.xp,
+                       "level" : x.level,
+                       "health":x.health,
+                       "money" : x.money,
+                       "power" : x.power,
+                       "weapons" : {"Stick":20},
+                       "cooldown":"",
+                       "powerups": {},
+                      "Villains": {'Boss1': {'health': 100, 'power': 10,'xp':10},
+                                   'Boss2': {'health': 100, 'power': 20,'xp':30},
+                                   'Boss3': {'health': 100, 'power': 30,'xp':50},
+                                   'Boss4': {'health': 100, 'power': 40,'xp':70},
+                                   'Boss5': {'health': 100, 'power': 50,'xp':100},
+                                   'trainer':{'health':100, 'power': x.power+5,'xp':x.xp+10}
+}
+                    }})
+    
+            file = open(r"weapons.json","r")
+            i=json.load(file)
+            armoury = self.ref.child('weapons')
+            armoury.update(i)
 
     class chars:  #Parent Class for general charachter outline
         def __init__(self,typee,power,health,xp,value):
@@ -157,8 +191,9 @@ class game(commands.Cog):
             self.id = id
             self.name = name
             self.money = money
-            self.w = self.ref.child("users")
             self.ref = db.reference("/")
+            self.w = self.ref.child("users")
+            
     class evil(chars):  #Class for opponents
         def __init__(self,name,power=20, typee="System wardogs", health=100, xp=1000, value=None,lower_blk=0,upper_blk=0):
             super().__init__(typee, power, health, xp, value)
@@ -199,27 +234,18 @@ class game(commands.Cog):
             return l
         async def buy_cmd(i:discord.Interaction,current:str)->list[app_commands.Choice[str]]:
             w = self.ref.child("weapons")
-            for i in w.get().values():   # i={weapons:[{guns:{}}]}
-                for j in i.values():  # j=[{guns:{},melee:{}}] list of categories\
-                    cat = []
-                    for k in j:          # k={guns:{}}
-                        for l in k:         # l=guns
-                            cat.append(app_commands.Choice(name=l,value=l)) 
-            return cat 
+            l = []
+            for x in w.get():
+                l.append(app_commands.Choice(name = x, value=x))
+            return l
         async def buy_item(i:discord.Interaction,current:str)->list[app_commands.Choice[str]]:
             w = self.ref.child("weapons")
-            for i in w.get().values():   # i={weapons:[{guns:{}}]}
-                print(f"current = {current}") 
-                for j in i.values():  # j=[{guns:{},melee:{}}] list of categories\
-                    lis=[]
-                    for k in j:   
-                        for l in k:         # l=guns 
-                            
-                            for m in k[l]:
-                                lis.append(app_commands.Choice(name=m,value=m))
-                        
-                    #print(dic)
-                    return lis
+            
+            l = []
+            for x in w.get():
+                for y in w.get()[x]:
+                    l.append(app_commands.Choice(name = y, value=y))
+            return l
 
             
               
@@ -297,23 +323,22 @@ class game(commands.Cog):
                 await i.response.send_message(f"Your on Cooldown till {t}")
         @self.bot.tree.command(name="weapon",description="Lists out the weapons in the Store.")
 
-        async def weapon(interaction):
-            w = self.ref.child("weapons")
+        async def weapon(i:discord.Interaction):
+            await i.response.defer()
+            w = self.ref.child("weapons").get()
             #g = w.get()
             #wname = list(g.values())
+            
             shop = discord.Embed(title="Shop")
-            shop.set_author(name=interaction.user.display_name ,icon_url=interaction.user.display_avatar)
-            shop.set_thumbnail(url="https://ak.picdn.net/shutterstock/videos/1059212528/thumb/9.jpg?ip=x480")
-            for i in w.get().values():   # i={weapons:[{guns:{}}]}
-                for j in i.values():     # j=[{guns:{},melee:{}}] list of categories
-                    for k in j:          # k={guns:{}}
-                        for l in k:         # l=guns
-                            lis = []
-                            for m in k[l]:
-                                lis.append(f"**{m}** : {k[l][m][0]}")
-                            liss = '\n'.join(lis)
-                            shop.add_field(name=f"{l}",value=f"{liss}")
-            await interaction.response.send_message(embed=shop,ephemeral=True)
+            shop.set_author(name=i.user.display_name ,icon_url=i.user.display_avatar)
+            shop.set_image(url="https://ak.picdn.net/shutterstock/videos/1059212528/thumb/9.jpg?ip=x480")
+            for x in w:
+                l=[]
+                for j in w[x]:
+                    l.append(j)
+                l="\n".join(l)
+                shop.add_field(name=x,value=l)
+            await i.followup.send(embed=shop,ephemeral=False)
 
         @self.bot.tree.command(name="level",description="know your level")
         async def lvl(context):
@@ -326,32 +351,27 @@ class game(commands.Cog):
        # @app_commands.autocomplete(item=buy_item)
         @app_commands.autocomplete(category=buy_cmd,item=buy_item)
         async def buy(i:discord.Interaction,category:str,item:str)->list[app_commands.Choice[str]]:
+             await i.response.defer()
              purchase = discord.Embed(title = "Your Purchase")
-             purchase.add_field(name="category",value=category)
-             purchase.add_field(name="Item",value=item)
-             purchase.add_field(name="Cost",value=self.get(item)[0])
-             purchase.add_field(name="Damage",value=self.get(item)[1])
-             await i.response.send_message(embed=purchase,ephemeral=True)
+             x = self.w.get()
+             b = x[str(i.user.id)]
+             for x in self.weapon.get():
+                # for y in self.weapon.get()[x]:
+                if item in self.weapon.get()[x] : 
+                    if int(b["money"])>int(self.weapon.get()[x][item][0]):
+                        purchase.add_field(name="category",value=category)
+                        purchase.add_field(name="Item",value=item)
+                        purchase.add_field(name="Cost",value=f"{self.weapon.get()[x][item][0]}")
+                        purchase.add_field(name="Damage",value=f"{self.weapon.get()[x][item][1]}")
+                        b["money"]-=self.weapon.get()[x][item][0]
+                        b["weapons"][item]=self.weapon.get()[x][item][1]
+                        self.w.update({str(i.user.id):b})
+                    else:
+                        
+                        purchase.add_field(name="You Poor Young Man",value="Insufficient Funds")
+             await i.followup.send(embed=purchase,ephemeral=True)
         
-       # @app_commands.autocomplete(item=buy_item)
-       # async def buying(i:discord.Interaction,item:str)->list[app_commands.Choice[str]]:
 
- 
-
-
-#            u = ref.child("users/player")
-#            for i in u.get():
-#                for j in u.get().values():
-#                    for k in j:
-#                        if int(k)==int(context.message.author.id):
-#                            j[k]["weapons"].update({f"{item}":2000})  # test code to add(update) one article to the db
-#                            u.update({i:j})
-#                            break
-#                        else:
-#                            continue
-#                break
-#
-                   
 
         @self.bot.tree.command(name="train",description="Train and gain more xp")
         @app_commands.autocomplete(atck=atk_cmd)
@@ -371,39 +391,39 @@ class game(commands.Cog):
                     await i.followup.send("you won")
             else:
                 await i.followup.send("Your attack was blocked")
-    def bulk_store(self):      # Function to store all the members in the server
-        for i in self.bot.get_all_members():
-            if self.ref.child("users").get()==None or i.id not in self.ref.child('users').get() :
-                x=self.user(i.id,i.name)
-                self.store(x)
+#     def bulk_store(self):      # Function to store all the members in the server
+#         for i in self.bot.get_all_members():
+#             if self.ref.child("users").get()==None or i.id not in self.ref.child('users').get() :
+#                 x=self.user(i.id,i.name)
+#                 self.store(x)
 
-    def store(self,x):         # Function to push given datapoint into DB
+#     def store(self,x):         # Function to push given datapoint into DB
             
-            users = self.ref.child('users')
-            users.update({
-                x.id:{"typee":x.typee,
-                       "Name" : x.name,
-                       "xp" : x.xp,
-                       "level" : x.level,
-                       "health":x.health,
-                       "money" : x.money,
-                       "power" : x.power,
-                       "weapons" : {"Stick":20},
-                       "cooldown":"",
-                       "powerups": {},
-                      "Villains": {'Boss1': {'health': 100, 'power': 10,'xp':10},
-                                   'Boss2': {'health': 100, 'power': 20,'xp':30},
-                                   'Boss3': {'health': 100, 'power': 30,'xp':50},
-                                   'Boss4': {'health': 100, 'power': 40,'xp':70},
-                                   'Boss5': {'health': 100, 'power': 50,'xp':100},
-                                   'trainer':{'health':100, 'power': x.power+5,'xp':x.xp+10}
-}
-                    }})
+#             users = self.ref.child('users')
+#             users.update({
+#                 x.id:{"typee":x.typee,
+#                        "Name" : x.name,
+#                        "xp" : x.xp,
+#                        "level" : x.level,
+#                        "health":x.health,
+#                        "money" : x.money,
+#                        "power" : x.power,
+#                        "weapons" : {"Stick":20},
+#                        "cooldown":"",
+#                        "powerups": {},
+#                       "Villains": {'Boss1': {'health': 100, 'power': 10,'xp':10},
+#                                    'Boss2': {'health': 100, 'power': 20,'xp':30},
+#                                    'Boss3': {'health': 100, 'power': 30,'xp':50},
+#                                    'Boss4': {'health': 100, 'power': 40,'xp':70},
+#                                    'Boss5': {'health': 100, 'power': 50,'xp':100},
+#                                    'trainer':{'health':100, 'power': x.power+5,'xp':x.xp+10}
+# }
+#                     }})
     
-            file = open(r"weapons.json","r")
-            i=json.load(file)
-            armoury = self.ref.child('weapons')
-            armoury.push(i)
+#             file = open(r"weapons.json","r")
+#             i=json.load(file)
+#             armoury = self.ref.child('weapons')
+#             armoury.push(i)
 
         
 #i=blow(os.getenv("token"))
