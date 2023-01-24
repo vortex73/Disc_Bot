@@ -25,14 +25,16 @@ class msg(commands.Cog):
         async def on_member_join(member):
             await self.Bot.get_channel(1044294754818609216).send("Welcome {}".format(member.mention)) # Welcome msg 
 
-        @self.Bot.command(name="clear")
-        async def clear(msgs,amount=5):
-            await msgs.channel.purge(limit=amount)
-
-        @self.Bot.command(name="nuke")
-        async def clear(msgs):
+        @self.Bot.tree.command(name="clear",description = "Deletes given number of messages")
+        async def clear(msgs:discord.Interaction,amount:int):
+            await msgs.response.defer()
+            await msgs.channel.purge(limit=amount+1)
+            await msgs.followup.send("Deleted {amount} messages")
+        @self.Bot.tree.command(name="nuke",description = "Bulk deletion of messages(100)")
+        async def clear(msgs:discord.Interaction):
+            await msgs.response.defer()
             await msgs.channel.purge()
-
+            await msgs.followup.send("Messages Nuke'd")
         class Youtube(commands.Cog):
             def __init__(self,Bot):
                 self.Bot = Bot
@@ -72,14 +74,16 @@ class msg(commands.Cog):
 
 
 
-        @self.Bot.command(name="start-yt")  #function to tell the bot to start otifying
-        async def start_notifications(notify):
+        @self.Bot.tree.command(name="start-yt",description = "Begin looking for youtube notifications")  #function to tell the bot to start otifying
+        async def start_notifications(notify:discord.Interaction):
+            await notify.response.defer()
             Youtube(self.Bot).check.start()
-            await notify.send("Now notifying")
+            await notify.followup.send("Now notifying")
 
-        @self.Bot.command(name="stop-yt")  #function to tell the bot to stop notifying
-        async def stop_notifications(notify):
+        @self.Bot.tree.command(name="stop-yt",description = "Stop looking for youtube notifications")  #function to tell the bot to stop notifying
+        async def stop_notifications(notify:discord.Interaction):
+            await notify.response.defer()
             Youtube(self.Bot).check.stop()
-            await notify.send("Stopped notifying")
+            await notify.followup.send("Stopped notifying")
 
 #Bot.run(os.getenv("token"))

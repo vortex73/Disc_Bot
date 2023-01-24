@@ -106,4 +106,3 @@ class music_func(commands.Cog):
         self.is_playing=False
         self.is_paused=False
         await self.vc.disconnect()
-
