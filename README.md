@@ -1,2 +1,5 @@
 # Disc_Bot
-Discord Bot to solve the world's most pressing issues
+Discord Bot:
+  Server management & message deletion
+  Plays music in VC
+  basic rpg game with playerprofiles
